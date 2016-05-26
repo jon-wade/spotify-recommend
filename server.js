@@ -37,9 +37,42 @@ app.get('/search/:name', function(req, res) {
         var relatedReq = getFromApi(endpoint, null);
 
         relatedReq.on('end', function(item) {
-            console.log(item);
+            //console.log(item);
             artist.related = item.artists;
-            res.json(artist);
+            var counter = 0;
+            var numRelatedArtists = item.artists.length;
+
+            console.log('numRelatedArtists = ', numRelatedArtists);
+
+            artist.related.forEach(function(relatedArtist){
+               //console.log(relatedArtist.name, " ", relatedArtist.id);
+               endpoint = 'artists/' + relatedArtist.id + '/top-tracks?country=GB';
+
+               var trackReq = getFromApi(endpoint, null);
+
+               trackReq.on('end', function(item){
+                   //do something here
+                   //console.log('doing something:', counter);
+                   //console.log('Item tracks = ', item.tracks);
+                   relatedArtist.tracks = item.tracks;
+                   //console.log('track response', item);
+                   checkComplete();
+                   counter++;
+               });
+
+                trackReq.on('error', function(code){
+                    res.sendStatus(code);
+                });
+
+
+                var checkComplete = function(){
+                    if(counter == numRelatedArtists-1) {
+                        //console.log('Sending Artists to UI');
+                        //console.log(artist);
+                        res.json(artist);
+                    }
+                };
+            });
         });
 
         relatedReq.on('error', function(code){
@@ -55,4 +88,3 @@ app.get('/search/:name', function(req, res) {
 
 app.listen(8080);
 
-//https://api.spotify.com/v1/artists/{id}/related-artists
